@@ -19,12 +19,32 @@ const app = express();
 app.use(helmet());
 
 // CORS
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? ["https://yourdomain.com"]
+    : [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+      ];
+
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? ["https://yourdomain.com"]
-        : ["http://localhost:3000", "http://localhost:3001"],
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow non-browser requests (e.g. Postman)
+
+      // Allow specific origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Allow any localhost:* (for dev flexibility)
+      if (origin.startsWith("http://localhost:")) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS: " + origin));
+    },
     credentials: true,
   })
 );
